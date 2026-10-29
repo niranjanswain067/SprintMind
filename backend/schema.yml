@@ -1,0 +1,67 @@
+openapi: 3.0.3
+info:
+  title: SprintMind API
+  version: 1.0.0
+  description: AI-Powered Agile Project Management System API specification and documentation.
+paths:
+  /api/v1/health/:
+    get:
+      operationId: v1_health_retrieve
+      description: Verify service availability and active database connection.
+      summary: System Health Check
+      tags:
+      - v1
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthSuccessResponse'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthFailureResponse'
+          description: ''
+components:
+  schemas:
+    HealthFailureResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          default: unhealthy
+        database:
+          type: string
+          default: disconnected
+        version:
+          type: string
+          default: 1.0.0
+        timestamp:
+          type: string
+          format: date-time
+        error:
+          type: string
+      required:
+      - error
+      - timestamp
+    HealthSuccessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          default: healthy
+        database:
+          type: string
+          default: connected
+        version:
+          type: string
+          default: 1.0.0
+        timestamp:
+          type: string
+          format: date-time
+      required:
+      - timestamp

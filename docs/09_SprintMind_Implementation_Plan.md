@@ -173,44 +173,44 @@ gantt
 **Goal**: Deliver full sprint planning/execution, drag-and-drop Kanban workflow, and real-time dashboard analytics.
 
 #### 3.1 Backend Implementation (`apps/sprints`, `apps/reports`)
-- [ ] **Sprint Model**:
+- [x] **Sprint Model**:
   - Fields: `project`, `name`, `goal`, `start_date`, `end_date`, `status` (`planned`, `active`, `completed`), `summary`.
   - Partial unique database constraint: Enforce **maximum 1 active sprint per project**.
-- [ ] **Sprint Endpoints**:
+- [x] **Sprint Endpoints**:
   - `POST /api/v1/projects/{id}/sprints/`
   - `POST /api/v1/sprints/{id}/start/` (validates no other sprint is active).
   - `POST /api/v1/sprints/{id}/complete/` (moves unfinished issues to backlog or chosen sprint).
   - `POST /api/v1/sprints/{id}/issues/` & `DELETE /api/v1/sprints/{id}/issues/{issue_id}/`.
-- [ ] **Kanban Board Endpoint**:
+- [x] **Kanban Board Endpoint**:
   - `GET /api/v1/projects/{id}/board/`:
     - Scrum: Returns active sprint issues grouped into `todo`, `in_progress`, `in_review`, `done`.
     - Kanban: Returns all active issues grouped by status.
   - `PATCH /api/v1/issues/{id}/move/`: Updates status and rank atomically.
-- [ ] **Dashboard Aggregations (`GET /api/v1/projects/{id}/dashboard/`)**:
+- [x] **Dashboard Aggregations (`GET /api/v1/projects/{id}/dashboard/`)**:
   - SQL aggregate queries for: Total issues, In Progress, Done, Overdue count (`due_date < today AND status != 'done'`), completion %.
   - Active sprint point totals and progress %.
 
 #### 3.2 Frontend Implementation
-- [ ] **Sprint Planning in Backlog**:
+- [x] **Sprint Planning in Backlog**:
   - Sprint containers above the backlog list.
   - Drag issues from Backlog into planned sprints.
   - "Start Sprint" modal (name, dates, goal confirmation).
   - "Complete Sprint" modal (display done vs unfinished count; radio choice to roll over to backlog or next sprint).
-- [ ] **Interactive Kanban Board (`features/board`)**:
+- [x] **Interactive Kanban Board (`features/board`)**:
   - 4 columns (`To Do`, `In Progress`, `In Review`, `Done`).
   - Draggable issue cards (`IssueCard`) with key, title, assignee avatar, points badge, priority icon.
   - Smooth optimistic drag-and-drop via `@hello-pangea/dnd` with server rollback on failure.
   - Quick filter: "My Issues" toggle.
-- [ ] **Project Dashboard (`features/dashboard`)**:
+- [x] **Project Dashboard (`features/dashboard`)**:
   - 4 KPI metric cards (Total, In Progress, Done, Overdue).
   - Active sprint progress bar with points and %.
   - Issues by status bar chart using Recharts.
   - Overdue issues list with clickable direct navigation to issue detail.
 
 #### 3.3 Phase 3 Testing Checkpoint
-- [ ] Business rule test: Attempt to start a sprint while another is active; verify `400 Bad Request`.
-- [ ] Sprint completion test: Verify incomplete issues correctly move to backlog while done issues remain attached.
-- [ ] Dashboard accuracy test: Validate API response values match exact database count queries.
+- [x] Business rule test: Attempt to start a sprint while another is active; verify `400 Bad Request`.
+- [x] Sprint completion test: Verify incomplete issues correctly move to backlog while done issues remain attached.
+- [x] Dashboard accuracy test: Validate API response values match exact database count queries.
 
 ---
 
@@ -219,31 +219,31 @@ gantt
 **Goal**: Integrate the Groq API service layer and implement human-in-the-loop review interfaces for all 5 AI capabilities.
 
 #### 4.1 Backend Implementation (`apps/ai_assistant`)
-- [ ] **Groq Client Service (`services.py`)**:
+- [x] **Groq Client Service (`services.py`)**:
   - Wrapper using official Groq SDK with configured model (`GROQ_MODEL=llama-3.3-70b-versatile`).
   - 30-second timeout configuration (`AI_TIMEOUT_SECONDS=30`).
   - Upstream exception mapping (`AITimeout`, `AIRateLimited`, `AIInvalidOutput`, `AIUnavailable`).
-- [ ] **System Prompts & Pydantic Schemas (`prompts.py`, `schemas.py`)**:
+- [x] **System Prompts & Pydantic Schemas (`prompts.py`, `schemas.py`)**:
   - Requirements ➔ Stories: Schema expecting array of `{ title, description, acceptance_criteria, story_points }`.
   - Task Breakdown: Expecting array of `{ title, estimated_points }`.
   - Acceptance Criteria: Expecting array of testable bullet strings.
   - Bug Analysis: Expecting `{ enhanced_summary, suggested_severity, missing_information }`.
   - Sprint Summary: Accepts real computed numbers in prompt; returns release notes summary.
-- [ ] **Safety & Resiliency**:
+- [x] **Safety & Resiliency**:
   - Input character limit (max 4,000 characters).
   - Single retry on malformed JSON response before throwing error.
   - Per-user rate limiting via DRF throttling (max 20 requests/hour).
   - Audit logging in `ai_request_logs` (logs timestamp, user_id, feature, latency_ms, status).
-- [ ] **Bulk Creation Endpoint**:
+- [x] **Bulk Creation Endpoint**:
   - `POST /api/v1/projects/{id}/issues/bulk-create/` to save approved AI drafts.
 
 #### 4.2 Frontend Implementation (`features/ai`)
-- [ ] **Shared AI Draft Review UI Components**:
+- [x] **Shared AI Draft Review UI Components**:
   - Purple badge: `✨ AI draft`.
   - Review box with selectable checkboxes, inline edit buttons, "Discard All", and "Add Selected" buttons.
   - Loading skeleton state with animated indicator: "AI is analyzing requirements...".
   - Graceful error banner with "Retry" action.
-- [ ] **AI Feature Modals**:
+- [x] **AI Feature Modals**:
   - `AIStoriesModal` (Backlog): Textarea to paste requirements ➔ Review drafts ➔ Bulk create to backlog.
   - `AITasksBox` (Issue Detail): Suggests sub-tasks ➔ Add selected as child tasks.
   - `AICriteriaBox` (Issue Detail): Suggests acceptance criteria ➔ Apply to story.
@@ -251,12 +251,12 @@ gantt
   - `AISprintSummaryModal` (Sprint Completion): Generates narrative summary from real sprint data ➔ Save to sprint.
 
 #### 4.3 Phase 4 Testing Checkpoint
-- [ ] Mock Groq tests:
+- [x] Mock Groq tests:
   - Test valid JSON returns correct drafts.
   - Test malformed JSON triggers exactly 1 retry and handles final failure.
   - Test 30s timeout returns `504 Gateway Timeout`.
   - Test 429 returns clean user error without crashing core app.
-- [ ] Zero DB write verification: Verify calling `/api/v1/ai/stories/` creates 0 records in `issues` table.
+- [x] Zero DB write verification: Verify calling `/api/v1/ai/stories/` creates 0 records in `issues` table.
 
 ---
 

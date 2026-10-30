@@ -11,19 +11,43 @@ import {
   Sparkles,
   ArrowUpDown,
   Building2,
-  FolderGit2
+  FolderGit2,
+  Zap,
+  Play,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Trash2,
+  Edit2,
+  ArrowRight,
+  MinusCircle,
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useAuth } from '../context/AuthContext';
 import { listBacklog, reorderBacklog } from '../api/issues';
+import {
+  listProjectSprints,
+  getSprintDetail,
+  deleteSprint,
+  addIssuesToSprint,
+  removeIssueFromSprint,
+} from '../api/sprints';
 import { listWorkspaceMembers } from '../api/workspaces';
 import IssueFormModal from '../components/IssueFormModal';
 import IssueDetailModal from '../components/IssueDetailModal';
+import SprintFormModal from '../components/SprintFormModal';
+import StartSprintModal from '../components/StartSprintModal';
+import CompleteSprintModal from '../components/CompleteSprintModal';
+import AIStoriesModal from '../components/AIStoriesModal';
 
 export default function BacklogPage() {
   const { activeWorkspace, activeProject } = useAuth();
 
   const [issues, setIssues] = useState([]);
+  const [sprints, setSprints] = useState([]);
+  const [sprintIssuesMap, setSprintIssuesMap] = useState({});
+  const [collapsedSprints, setCollapsedSprints] = useState({});
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -34,12 +58,20 @@ export default function BacklogPage() {
   const [assigneeFilter, setAssigneeFilter] = useState('');
 
   // Modals state
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateIssueModal, setShowCreateIssueModal] = useState(false);
+  const [showAIStoriesModal, setShowAIStoriesModal] = useState(false);
   const [selectedIssueId, setSelectedIssueId] = useState(null);
   const [members, setMembers] = useState([]);
 
+  // Sprint modals
+  const [showSprintModal, setShowSprintModal] = useState(false);
+  const [editingSprint, setEditingSprint] = useState(null);
+  const [startingSprint, setStartingSprint] = useState(null);
+  const [completingSprint, setCompletingSprint] = useState(null);
+
   const currentRole = activeWorkspace?.current_user_role || 'member';
   const canEdit = ['admin', 'manager', 'developer'].includes(currentRole);
+  const canManage = ['admin', 'manager'].includes(currentRole);
 
   const fetchBacklogIssues = useCallback(async () => {
     if (!activeProject?.id) {
@@ -64,9 +96,47 @@ export default function BacklogPage() {
     }
   }, [activeProject?.id, searchTerm, typeFilter, priorityFilter, assigneeFilter]);
 
+  const fetchSprintsData = useCallback(async () => {
+    if (!activeProject?.id) {
+      setSprints([]);
+      return;
+    }
+    try {
+      const spData = await listProjectSprints(activeProject.id);
+      setSprints(spData);
+
+      // Fetch issues for each active and planned sprint
+      const map = {};
+      await Promise.all(
+        spData
+          .filter((s) => s.status !== 'completed')
+          .map(async (s) => {
+            try {
+              const detail = await getSprintDetail(s.id);
+              map[s.id] = detail.issues || [];
+            } catch {
+              map[s.id] = [];
+            }
+          })
+      );
+      setSprintIssuesMap(map);
+    } catch {
+      setSprints([]);
+    }
+  }, [activeProject?.id]);
+
+  const refreshAll = useCallback(() => {
+    fetchBacklogIssues();
+    fetchSprintsData();
+  }, [fetchBacklogIssues, fetchSprintsData]);
+
   useEffect(() => {
     fetchBacklogIssues();
   }, [fetchBacklogIssues]);
+
+  useEffect(() => {
+    fetchSprintsData();
+  }, [fetchSprintsData]);
 
   useEffect(() => {
     if (activeWorkspace?.id) {
@@ -87,7 +157,6 @@ export default function BacklogPage() {
     reordered.splice(destination.index, 0, movedItem);
     setIssues(reordered);
 
-    // Compute previous and next issue IDs
     const prevIssue = destination.index > 0 ? reordered[destination.index - 1] : null;
     const nextIssue = destination.index < reordered.length - 1 ? reordered[destination.index + 1] : null;
 
@@ -101,6 +170,45 @@ export default function BacklogPage() {
       alert(err.response?.data?.error?.message || 'Failed to persist rank ordering.');
       fetchBacklogIssues();
     }
+  };
+
+  const handleAssignToSprint = async (issueId, sprintId) => {
+    if (!canEdit) return;
+    try {
+      await addIssuesToSprint(sprintId, [issueId]);
+      refreshAll();
+    } catch (err) {
+      alert(err.response?.data?.error?.message || 'Failed to add issue to sprint.');
+    }
+  };
+
+  const handleRemoveFromSprint = async (sprintId, issueId) => {
+    if (!canEdit) return;
+    try {
+      await removeIssueFromSprint(sprintId, issueId);
+      refreshAll();
+    } catch (err) {
+      alert(err.response?.data?.error?.message || 'Failed to move issue to backlog.');
+    }
+  };
+
+  const handleDeleteSprint = async (sprint) => {
+    if (!window.confirm(`Are you sure you want to delete ${sprint.name}? Any assigned issues will return to the backlog.`)) {
+      return;
+    }
+    try {
+      await deleteSprint(sprint.id);
+      refreshAll();
+    } catch (err) {
+      alert(err.response?.data?.error?.message || 'Failed to delete sprint.');
+    }
+  };
+
+  const toggleSprintCollapse = (sprintId) => {
+    setCollapsedSprints((prev) => ({
+      ...prev,
+      [sprintId]: !prev[sprintId],
+    }));
   };
 
   const typeConfig = {
@@ -145,12 +253,15 @@ export default function BacklogPage() {
           </div>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>No Active Project Selected</h2>
           <p style={{ color: 'var(--color-slate-600)', fontSize: '0.95rem' }}>
-            Please select an active project in the top navigation bar to manage its backlog.
+            Please select an active project in the top navigation bar to manage its backlog and sprints.
           </p>
         </div>
       </div>
     );
   }
+
+  const activeSprint = sprints.find((s) => s.status === 'active');
+  const plannedSprints = sprints.filter((s) => s.status === 'planned');
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -166,25 +277,56 @@ export default function BacklogPage() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', margin: 0 }}>
-              Product Backlog
+              Backlog & Sprints
             </h1>
             <span className="badge badge-primary" style={{ fontSize: '0.8rem' }}>
               {activeProject.key}
             </span>
+            <span className="badge" style={{ fontSize: '0.8rem', textTransform: 'uppercase' }}>
+              {activeProject.methodology}
+            </span>
           </div>
           <p style={{ color: 'var(--color-slate-600)', fontSize: '0.95rem', margin: 0 }}>
-            Prioritize and manage unassigned project issues and work items.
+            Plan sprints, assign deliverables, and prioritize backlog work items.
           </p>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          {canEdit && (
+          {canManage && activeProject.methodology === 'scrum' && (
             <button
-              onClick={() => setShowCreateModal(true)}
-              className="btn btn-primary"
+              onClick={() => {
+                setEditingSprint(null);
+                setShowSprintModal(true);
+              }}
+              className="btn btn-secondary"
             >
-              <Plus size={18} /> Create Issue
+              <Zap size={16} /> Create Sprint
             </button>
+          )}
+
+          {canEdit && (
+            <>
+              <button
+                onClick={() => setShowAIStoriesModal(true)}
+                className="btn btn-secondary"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  borderColor: 'var(--color-primary)',
+                  color: 'var(--color-primary)',
+                  fontWeight: 600,
+                }}
+              >
+                <Sparkles size={16} /> AI: Create Stories
+              </button>
+              <button
+                onClick={() => setShowCreateIssueModal(true)}
+                className="btn btn-primary"
+              >
+                <Plus size={18} /> Create Issue
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -281,7 +423,295 @@ export default function BacklogPage() {
         )}
       </div>
 
-      {/* Backlog Item Count & Section Header */}
+      {/* SPRINT CONTAINERS (For Scrum projects) */}
+      {activeProject.methodology === 'scrum' && (
+        <div style={{ marginBottom: '2.5rem' }}>
+          {/* Active Sprint Section */}
+          {activeSprint && (
+            <div
+              className="card"
+              style={{
+                marginBottom: '1.25rem',
+                border: '1.5px solid var(--color-primary)',
+                backgroundColor: '#FAFCFF',
+                padding: '1.25rem',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '0.75rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <button
+                    onClick={() => toggleSprintCollapse(activeSprint.id)}
+                    className="btn btn-ghost"
+                    style={{ padding: '0.2rem' }}
+                  >
+                    {collapsedSprints[activeSprint.id] ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
+                  </button>
+                  <span className="badge badge-primary" style={{ fontWeight: 700 }}>
+                    ACTIVE SPRINT
+                  </span>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>
+                    {activeSprint.name}
+                  </h3>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--color-slate-500)' }}>
+                    • {activeSprint.start_date || 'No start'} to {activeSprint.end_date || 'No end'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span className="badge" style={{ fontWeight: 600 }}>
+                    {activeSprint.done_points || 0} / {activeSprint.total_points || 0} pts ({activeSprint.progress_percentage || 0}%)
+                  </span>
+
+                  {canManage && (
+                    <>
+                      <button
+                        onClick={() => {
+                          setEditingSprint(activeSprint);
+                          setShowSprintModal(true);
+                        }}
+                        className="btn btn-ghost"
+                        style={{ padding: '0.35rem 0.65rem', fontSize: '0.8rem' }}
+                      >
+                        <Edit2 size={14} /> Edit
+                      </button>
+                      <button
+                        onClick={() => {
+                          setCompletingSprint({
+                            ...activeSprint,
+                            issues: sprintIssuesMap[activeSprint.id] || [],
+                          });
+                        }}
+                        className="btn btn-primary"
+                        style={{ padding: '0.35rem 0.85rem', fontSize: '0.85rem' }}
+                      >
+                        <Check size={16} /> Complete Sprint
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {activeSprint.goal && (
+                <p style={{ margin: '0 0 1rem 2rem', fontSize: '0.875rem', color: 'var(--color-slate-600)' }}>
+                  Goal: <em>"{activeSprint.goal}"</em>
+                </p>
+              )}
+
+              {/* Sprint Issue List */}
+              {!collapsedSprints[activeSprint.id] && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginLeft: '2rem' }}>
+                  {(sprintIssuesMap[activeSprint.id] || []).length > 0 ? (
+                    (sprintIssuesMap[activeSprint.id] || []).map((issue) => (
+                      <div
+                        key={issue.id}
+                        onClick={() => setSelectedIssueId(issue.id)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          backgroundColor: '#FFFFFF',
+                          border: '1px solid var(--color-slate-200)',
+                          borderRadius: 'var(--radius)',
+                          padding: '0.65rem 0.85rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <span style={{ fontSize: '1rem', marginRight: '0.65rem' }}>
+                          {typeConfig[issue.type]?.icon || '🔵'}
+                        </span>
+                        <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-primary)', minWidth: '70px' }}>
+                          {issue.key}
+                        </span>
+                        <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--color-slate-800)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                          {issue.title}
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                          {issue.story_points != null && (
+                            <span className="badge" style={{ fontSize: '0.75rem' }}>
+                              {issue.story_points} pts
+                            </span>
+                          )}
+                          <span className="badge" style={{ fontSize: '0.75rem' }}>
+                            {statusLabels[issue.status] || issue.status}
+                          </span>
+                          {canEdit && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveFromSprint(activeSprint.id, issue.id);
+                              }}
+                              className="btn btn-ghost"
+                              title="Move to Backlog"
+                              style={{ padding: '0.2rem', color: 'var(--color-slate-400)' }}
+                            >
+                              <MinusCircle size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--color-slate-400)', fontSize: '0.875rem' }}>
+                      No issues in this sprint. Move issues from the backlog below into this sprint.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Planned Sprints */}
+          {plannedSprints.map((ps) => (
+            <div
+              key={ps.id}
+              className="card"
+              style={{
+                marginBottom: '1rem',
+                border: '1px solid var(--color-slate-200)',
+                padding: '1.25rem',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '0.5rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <button
+                    onClick={() => toggleSprintCollapse(ps.id)}
+                    className="btn btn-ghost"
+                    style={{ padding: '0.2rem' }}
+                  >
+                    {collapsedSprints[ps.id] ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
+                  </button>
+                  <span className="badge" style={{ fontWeight: 600 }}>
+                    PLANNED
+                  </span>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>
+                    {ps.name}
+                  </h3>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--color-slate-500)' }}>
+                    • {ps.start_date || 'TBD'} to {ps.end_date || 'TBD'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span className="badge" style={{ fontWeight: 600 }}>
+                    {ps.total_points || 0} story pts
+                  </span>
+
+                  {canManage && (
+                    <>
+                      <button
+                        onClick={() => {
+                          setEditingSprint(ps);
+                          setShowSprintModal(true);
+                        }}
+                        className="btn btn-ghost"
+                        style={{ padding: '0.35rem 0.65rem', fontSize: '0.8rem' }}
+                      >
+                        <Edit2 size={14} /> Edit
+                      </button>
+                      <button
+                        onClick={() => setStartingSprint(ps)}
+                        className="btn btn-secondary"
+                        style={{ padding: '0.35rem 0.85rem', fontSize: '0.85rem' }}
+                      >
+                        <Play size={15} /> Start Sprint
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSprint(ps)}
+                        className="btn btn-ghost"
+                        title="Delete sprint"
+                        style={{ padding: '0.35rem', color: 'var(--color-danger)' }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {ps.goal && (
+                <p style={{ margin: '0 0 0.85rem 2rem', fontSize: '0.85rem', color: 'var(--color-slate-600)' }}>
+                  Goal: <em>"{ps.goal}"</em>
+                </p>
+              )}
+
+              {/* Planned Sprint Issues List */}
+              {!collapsedSprints[ps.id] && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginLeft: '2rem' }}>
+                  {(sprintIssuesMap[ps.id] || []).length > 0 ? (
+                    (sprintIssuesMap[ps.id] || []).map((issue) => (
+                      <div
+                        key={issue.id}
+                        onClick={() => setSelectedIssueId(issue.id)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          backgroundColor: '#FFFFFF',
+                          border: '1px solid var(--color-slate-200)',
+                          borderRadius: 'var(--radius)',
+                          padding: '0.65rem 0.85rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <span style={{ fontSize: '1rem', marginRight: '0.65rem' }}>
+                          {typeConfig[issue.type]?.icon || '🔵'}
+                        </span>
+                        <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-primary)', minWidth: '70px' }}>
+                          {issue.key}
+                        </span>
+                        <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--color-slate-800)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                          {issue.title}
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                          {issue.story_points != null && (
+                            <span className="badge" style={{ fontSize: '0.75rem' }}>
+                              {issue.story_points} pts
+                            </span>
+                          )}
+                          <span className="badge" style={{ fontSize: '0.75rem' }}>
+                            {statusLabels[issue.status] || issue.status}
+                          </span>
+                          {canEdit && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveFromSprint(ps.id, issue.id);
+                              }}
+                              className="btn btn-ghost"
+                              title="Move to Backlog"
+                              style={{ padding: '0.2rem', color: 'var(--color-slate-400)' }}
+                            >
+                              <MinusCircle size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--color-slate-400)', fontSize: '0.85rem' }}>
+                      No issues planned for this sprint yet.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* UNASSIGNED BACKLOG SECTION */}
       <div
         style={{
           display: 'flex',
@@ -291,8 +721,8 @@ export default function BacklogPage() {
           padding: '0 0.25rem',
         }}
       >
-        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-slate-600)' }}>
-          Backlog Items ({issues.length})
+        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-slate-800)' }}>
+          Backlog ({issues.length} {issues.length === 1 ? 'issue' : 'issues'})
         </span>
         <span style={{ fontSize: '0.8rem', color: 'var(--color-slate-400)' }}>
           Drag handles to prioritize order
@@ -333,7 +763,7 @@ export default function BacklogPage() {
               : 'Add your first story, task, or bug to the backlog to begin planning.'}
           </p>
           {canEdit && (
-            <button onClick={() => setShowCreateModal(true)} className="btn btn-primary" style={{ margin: '0 auto' }}>
+            <button onClick={() => setShowCreateIssueModal(true)} className="btn btn-primary" style={{ margin: '0 auto' }}>
               <Plus size={16} /> Create Issue
             </button>
           )}
@@ -510,6 +940,40 @@ export default function BacklogPage() {
                                 -
                               </div>
                             )}
+
+                            {/* Quick action: Send to sprint (if sprints exist) */}
+                            {canEdit && sprints.filter((s) => s.status !== 'completed').length > 0 && (
+                              <select
+                                defaultValue=""
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  if (e.target.value) {
+                                    handleAssignToSprint(item.id, parseInt(e.target.value, 10));
+                                    e.target.value = '';
+                                  }
+                                }}
+                                style={{
+                                  fontSize: '0.75rem',
+                                  padding: '0.2rem 0.4rem',
+                                  borderRadius: 'var(--radius)',
+                                  border: '1px solid var(--color-slate-300)',
+                                  backgroundColor: '#FFFFFF',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <option value="" disabled>
+                                  + Move to sprint
+                                </option>
+                                {sprints
+                                  .filter((s) => s.status !== 'completed')
+                                  .map((s) => (
+                                    <option key={s.id} value={s.id}>
+                                      {s.name} ({s.status})
+                                    </option>
+                                  ))}
+                              </select>
+                            )}
                           </div>
                         </div>
                       )}
@@ -524,11 +988,21 @@ export default function BacklogPage() {
       )}
 
       {/* Issue Creation Modal */}
-      {showCreateModal && (
+      {showCreateIssueModal && (
         <IssueFormModal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          onSuccess={() => fetchBacklogIssues()}
+          isOpen={showCreateIssueModal}
+          onClose={() => setShowCreateIssueModal(false)}
+          onSuccess={() => refreshAll()}
+          projectId={activeProject.id}
+        />
+      )}
+
+      {/* AI Stories Modal */}
+      {showAIStoriesModal && (
+        <AIStoriesModal
+          isOpen={showAIStoriesModal}
+          onClose={() => setShowAIStoriesModal(false)}
+          onSuccess={() => refreshAll()}
           projectId={activeProject.id}
         />
       )}
@@ -539,14 +1013,48 @@ export default function BacklogPage() {
           isOpen={Boolean(selectedIssueId)}
           onClose={() => setSelectedIssueId(null)}
           issueId={selectedIssueId}
-          onIssueUpdated={() => fetchBacklogIssues()}
+          onIssueUpdated={() => refreshAll()}
           onIssueDeleted={() => {
             setSelectedIssueId(null);
-            fetchBacklogIssues();
+            refreshAll();
           }}
+        />
+      )}
+
+      {/* Sprint Form Modal (Create or Edit) */}
+      {showSprintModal && (
+        <SprintFormModal
+          isOpen={showSprintModal}
+          onClose={() => {
+            setShowSprintModal(false);
+            setEditingSprint(null);
+          }}
+          onSuccess={() => refreshAll()}
+          projectId={activeProject.id}
+          initialData={editingSprint}
+        />
+      )}
+
+      {/* Start Sprint Modal */}
+      {startingSprint && (
+        <StartSprintModal
+          isOpen={Boolean(startingSprint)}
+          onClose={() => setStartingSprint(null)}
+          onSuccess={() => refreshAll()}
+          sprint={startingSprint}
+        />
+      )}
+
+      {/* Complete Sprint Modal */}
+      {completingSprint && (
+        <CompleteSprintModal
+          isOpen={Boolean(completingSprint)}
+          onClose={() => setCompletingSprint(null)}
+          onSuccess={() => refreshAll()}
+          sprint={completingSprint}
+          plannedSprints={plannedSprints}
         />
       )}
     </div>
   );
 }
-

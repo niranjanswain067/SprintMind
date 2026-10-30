@@ -8,6 +8,10 @@ import RegisterPage from './pages/RegisterPage';
 import ProjectsPage from './pages/ProjectsPage';
 import TeamPage from './pages/TeamPage';
 import BacklogPage from './pages/BacklogPage';
+import DashboardPage from './pages/DashboardPage';
+import BoardPage from './pages/BoardPage';
+import SprintsPage from './pages/SprintsPage';
+import ReportsPage from './pages/ReportsPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 
 const queryClient = new QueryClient({
@@ -91,47 +95,11 @@ function AppRoutes() {
         <Route index element={<Navigate to="/projects" replace />} />
         <Route path="projects" element={<ProjectsPage />} />
         <Route path="team" element={<TeamPage />} />
-        <Route
-          path="dashboard"
-          element={
-            <PlaceholderPage
-              title="Project Dashboard"
-              phase="Phase 3"
-              description="Live SQL KPI cards, sprint velocity progress, and interactive status charts."
-            />
-          }
-        />
+        <Route path="dashboard" element={<DashboardPage />} />
         <Route path="backlog" element={<BacklogPage />} />
-        <Route
-          path="sprints"
-          element={
-            <PlaceholderPage
-              title="Sprint Management"
-              phase="Phase 3"
-              description="Sprint creation, 1-active-sprint validation, start & complete sprint lifecycle."
-            />
-          }
-        />
-        <Route
-          path="board"
-          element={
-            <PlaceholderPage
-              title="Kanban Board"
-              phase="Phase 3"
-              description="Optimistic drag-and-drop issue cards across To Do, In Progress, In Review, Done."
-            />
-          }
-        />
-        <Route
-          path="reports"
-          element={
-            <PlaceholderPage
-              title="Reports & Analytics"
-              phase="Phase 3"
-              description="Sprint burndown metrics, issue distribution, and completed sprint summaries."
-            />
-          }
-        />
+        <Route path="sprints" element={<SprintsPage />} />
+        <Route path="board" element={<BoardPage />} />
+        <Route path="reports" element={<ReportsPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/projects" replace />} />

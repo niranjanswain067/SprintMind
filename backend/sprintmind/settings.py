@@ -3,6 +3,7 @@ SprintMind Django Configuration - Phase 0
 """
 
 import os
+import sys
 from pathlib import Path
 from datetime import timedelta
 import dj_database_url
@@ -47,6 +48,8 @@ INSTALLED_APPS = [
     'apps.projects',
     'apps.sprints',
     'apps.issues',
+    'apps.reports',
+    'apps.ai_assistant',
 ]
 
 AUTH_USER_MODEL = 'accounts.User'
@@ -82,9 +85,11 @@ TEMPLATES = [
 WSGI_APPLICATION = 'sprintmind.wsgi.application'
 
 # Database Configuration
-# Connects to Neon PostgreSQL when configured, or local SQLite for development fallback
+# Connects to Neon PostgreSQL when configured, or local SQLite for development fallback and tests
+IS_TESTING = 'test' in sys.argv or 'pytest' in sys.modules or os.getenv('DJANGO_TESTING') == '1'
+
 DATABASE_URL = os.getenv('DATABASE_URL')
-if DATABASE_URL and not DATABASE_URL.startswith('postgresql://user:password'):
+if DATABASE_URL and not DATABASE_URL.startswith('postgresql://user:password') and not IS_TESTING:
     DATABASES = {
         'default': dj_database_url.config(
             default=DATABASE_URL,
@@ -167,3 +172,9 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
     'COMPONENT_SPLIT_REQUEST': True,
 }
+
+# Groq API configuration
+GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
+GROQ_MODEL = os.getenv('GROQ_MODEL', 'llama-3.3-70b-versatile')
+AI_TIMEOUT_SECONDS = int(os.getenv('AI_TIMEOUT_SECONDS', 30))
+AI_RATE_LIMIT_PER_HOUR = int(os.getenv('AI_RATE_LIMIT_PER_HOUR', 20))

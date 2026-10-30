@@ -18,5 +18,7 @@ urlpatterns = [
     path('api/v1/auth/', include('apps.accounts.urls')),
     path('api/v1/workspaces/', include('apps.workspaces.urls')),
     path('api/v1/projects/', include('apps.projects.urls')),
+    path('api/v1/sprints/', include('apps.sprints.urls')),
     path('api/v1/issues/', include('apps.issues.urls')),
+    path('api/v1/ai/', include('apps.ai_assistant.urls')),
 ]

@@ -9,6 +9,7 @@ venv/
 ENV/
 *.sqlite3
 *.log
+staticfiles/
 
 # Node / React
 node_modules/

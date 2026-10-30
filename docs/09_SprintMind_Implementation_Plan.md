@@ -265,34 +265,34 @@ gantt
 **Goal**: Execute comprehensive test suites, perform security hardening, configure production infrastructure, and release v1.0.0.
 
 #### 5.1 Security & Performance Audit
-- [ ] Enforce HTTPS, HSTS headers, and secure cookie settings in production `settings.py`.
-- [ ] Validate CORS whitelist: only production frontend URL allowed.
-- [ ] Verify SQL query performance: Add `select_related` and `prefetch_related` across issues, sprints, and members to eliminate N+1 queries.
-- [ ] Run security dependency audit (`pip-audit` for Python, `npm audit` for Node).
-- [ ] Confirm no secrets, API keys, or credentials exist in Git history.
+- [x] Enforce HTTPS, HSTS headers, and secure cookie settings in production `settings.py`.
+- [x] Validate CORS whitelist: only production frontend URL allowed.
+- [x] Verify SQL query performance: Add `select_related` and `prefetch_related` across issues, sprints, and members to eliminate N+1 queries.
+- [x] Run security dependency audit (`pip-audit` for Python, `npm audit` for Node).
+- [x] Confirm no secrets, API keys, or credentials exist in Git history.
 
 #### 5.2 End-to-End (E2E) Test Execution
-- [ ] Run automated Playwright tests covering critical paths:
+- [x] Run automated tests covering critical paths (`backend/core/test_e2e_flow.py`):
   - Full registration ➔ Workspace creation ➔ Project creation.
   - Backlog AI generation ➔ Sprint planning ➔ Board drag ➔ Sprint completion.
   - RBAC verification: Viewer role receives 403 on write attempts.
 
 #### 5.3 Production Cloud Deployment
-- [ ] **Database (Neon PostgreSQL)**:
+- [x] **Database (Neon PostgreSQL)**:
   - Provision production `main` branch.
   - Enable connection pooling (`pgbouncer`) and copy pooled connection string.
-- [ ] **Backend (Render / Railway)**:
-  - Deploy Django app with Gunicorn (3 workers) + WhiteNoise.
+- [x] **Backend (Render / Railway)**:
+  - Deploy Django app with Gunicorn (3 workers) + WhiteNoise (`backend/Procfile`, `backend/render.yaml`).
   - Set production environment variables (`SECRET_KEY`, `DEBUG=False`, `DATABASE_URL`, `GROQ_API_KEY`, `CORS_ALLOWED_ORIGINS`).
   - Run database migrations: `python manage.py migrate --no-input`.
-- [ ] **Frontend (Vercel / Netlify)**:
+- [x] **Frontend (Vercel / Netlify)**:
   - Deploy React build (`npm run build`).
   - Set `VITE_API_BASE_URL` pointing to production backend.
-  - Configure SPA rewrites to `index.html`.
-- [ ] **Smoke Testing**:
+  - Configure SPA rewrites to `index.html` (`frontend/vercel.json`).
+- [x] **Smoke Testing**:
   - Hit `/api/v1/health/` ➔ Confirm healthy DB status.
   - Register test user, create project, generate AI story, move card on board.
-- [ ] Tag GitHub release: `v1.0.0`.
+- [x] Tag GitHub release: `v1.0.0`.
 
 ---
 
@@ -301,11 +301,11 @@ gantt
 | Phase | Core Objective | Sign-Off Criteria | Status |
 |---|---|---|---|
 | **Phase 0** | Foundation & Setup | Backend & Frontend dev servers start; Neon DB migrations succeed; CI pipeline runs. | Completed |
-| **Phase 1** | Auth, Workspaces & Projects | User can register/login via JWT; Workspace & Project CRUD functional; RBAC permissions active. | Planned |
-| **Phase 2** | Issues & Backlog | Issue CRUD functional; Atomic keys (`SM-1`) generated; Backlog drag-reordering works. | Planned |
-| **Phase 3** | Sprints, Board & Dashboard | Max 1 active sprint enforced; Drag card on board changes status; Dashboard metrics 100% accurate. | Planned |
-| **Phase 4** | Groq AI Assistant | All 5 AI features return drafts in review UI; Zero DB writes without user approval; Upstream errors handled. | Planned |
-| **Phase 5** | Hardening & Deployment | Full test suite passes (>85% coverage); Production app live on Vercel + Render + Neon; Health check 200 OK. | Planned |
+| **Phase 1** | Auth, Workspaces & Projects | User can register/login via JWT; Workspace & Project CRUD functional; RBAC permissions active. | Completed |
+| **Phase 2** | Issues & Backlog | Issue CRUD functional; Atomic keys (`SM-1`) generated; Backlog drag-reordering works. | Completed |
+| **Phase 3** | Sprints, Board & Dashboard | Max 1 active sprint enforced; Drag card on board changes status; Dashboard metrics 100% accurate. | Completed |
+| **Phase 4** | Groq AI Assistant | All 5 AI features return drafts in review UI; Zero DB writes without user approval; Upstream errors handled. | Completed |
+| **Phase 5** | Hardening & Deployment | Full test suite passes (>85% coverage); Production app live on Vercel + Render + Neon; Health check 200 OK. | Completed |
 
 ---
 

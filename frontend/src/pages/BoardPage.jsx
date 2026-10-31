@@ -14,7 +14,8 @@ import {
   Clock,
   Sparkles,
 } from 'lucide-react';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { DragDropContext, Draggable } from '@hello-pangea/dnd';
+import StrictModeDroppable from '../components/StrictModeDroppable';
 import { useAuth } from '../context/AuthContext';
 import { getProjectBoard } from '../api/reports';
 import { moveIssue } from '../api/issues';
@@ -483,7 +484,7 @@ export default function BoardPage() {
                   </div>
 
                   {/* Droppable Column Items */}
-                  <Droppable droppableId={col.id}>
+                  <StrictModeDroppable droppableId={col.id}>
                     {(provided, snapshot) => (
                       <div
                         ref={provided.innerRef}
@@ -623,7 +624,7 @@ export default function BoardPage() {
                                           fontWeight: 700,
                                         }}
                                       >
-                                        {item.assignee.initials || item.assignee.name[0]}
+                                        {item.assignee.initials || item.assignee.name?.[0] || 'U'}
                                       </div>
                                     ) : (
                                       <div
@@ -652,7 +653,7 @@ export default function BoardPage() {
                         {provided.placeholder}
                       </div>
                     )}
-                  </Droppable>
+                  </StrictModeDroppable>
                 </div>
               );
             })}

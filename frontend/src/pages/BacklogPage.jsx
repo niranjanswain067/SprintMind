@@ -22,7 +22,8 @@ import {
   ArrowRight,
   MinusCircle,
 } from 'lucide-react';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { DragDropContext, Draggable } from '@hello-pangea/dnd';
+import StrictModeDroppable from '../components/StrictModeDroppable';
 import { useAuth } from '../context/AuthContext';
 import { listBacklog, reorderBacklog } from '../api/issues';
 import {
@@ -260,8 +261,10 @@ export default function BacklogPage() {
     );
   }
 
-  const activeSprint = sprints.find((s) => s.status === 'active');
-  const plannedSprints = sprints.filter((s) => s.status === 'planned');
+  const sprintList = Array.isArray(sprints) ? sprints : [];
+  const issueList = Array.isArray(issues) ? issues : [];
+  const activeSprint = sprintList.find((s) => s.status === 'active');
+  const plannedSprints = sprintList.filter((s) => s.status === 'planned');
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -400,11 +403,15 @@ export default function BacklogPage() {
           style={{ width: 'auto' }}
         >
           <option value="">All Assignees</option>
-          {members.map((m) => (
-            <option key={m.user.id} value={m.user.id}>
-              {m.user.name}
-            </option>
-          ))}
+          {Array.isArray(members) && members.map((m) => {
+            const memberId = m.user_id || m.user?.id || m.id;
+            const memberName = m.name || m.user?.name || m.email || `Member ${memberId}`;
+            return (
+              <option key={memberId} value={memberId}>
+                {memberName}
+              </option>
+            );
+          })}
         </select>
 
         {(searchTerm || typeFilter || priorityFilter || assigneeFilter) && (
@@ -770,7 +777,7 @@ export default function BacklogPage() {
         </div>
       ) : (
         <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="backlog-items">
+          <StrictModeDroppable droppableId="backlog-items">
             {(provided) => (
               <div
                 {...provided.droppableProps}
@@ -920,7 +927,7 @@ export default function BacklogPage() {
                                   fontWeight: 700,
                                 }}
                               >
-                                {item.assignee.initials || item.assignee.name[0]}
+                                {item.assignee.initials || item.assignee.name?.[0] || 'U'}
                               </div>
                             ) : (
                               <div
@@ -983,7 +990,7 @@ export default function BacklogPage() {
                 {provided.placeholder}
               </div>
             )}
-          </Droppable>
+          </StrictModeDroppable>
         </DragDropContext>
       )}
 

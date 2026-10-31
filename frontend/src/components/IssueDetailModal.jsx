@@ -1146,11 +1146,15 @@ export default function IssueDetailModal({
                     className="input"
                   >
                     <option value="">Unassigned</option>
-                    {members.map((m) => (
-                      <option key={m.user.id} value={m.user.id}>
-                        {m.user.name} ({m.role})
-                      </option>
-                    ))}
+                    {Array.isArray(members) && members.map((m) => {
+                      const memberId = m.user_id || m.user?.id || m.id;
+                      const memberName = m.name || m.user?.name || m.email || `Member ${memberId}`;
+                      return (
+                        <option key={memberId} value={memberId}>
+                          {memberName} ({m.role})
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 

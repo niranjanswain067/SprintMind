@@ -13,6 +13,7 @@ import BoardPage from './pages/BoardPage';
 import SprintsPage from './pages/SprintsPage';
 import ReportsPage from './pages/ReportsPage';
 import PlaceholderPage from './pages/PlaceholderPage';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -112,7 +113,9 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          <AppRoutes />
+          <ErrorBoundary>
+            <AppRoutes />
+          </ErrorBoundary>
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>

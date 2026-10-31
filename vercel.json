@@ -1,42 +1,40 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "maxLambdaSize": "15mb",
-        "runtime": "python3.11"
-      }
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "sprintmind-api": {
+      "root": "backend",
+      "framework": "django",
+      "buildCommand": "python manage.py collectstatic --no-input"
     },
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
+    "sprintmind-ui": {
+      "root": "frontend",
+      "framework": "vite"
     }
-  ],
-  "routes": [
+  },
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "api/index.py"
+      "source": "/api/(.*)",
+      "destination": {
+        "service": "sprintmind-api"
+      }
     },
     {
-      "src": "/admin/(.*)",
-      "dest": "api/index.py"
+      "source": "/admin/(.*)",
+      "destination": {
+        "service": "sprintmind-api"
+      }
     },
     {
-      "src": "/static/(.*)",
-      "dest": "api/index.py"
+      "source": "/static/(.*)",
+      "destination": {
+        "service": "sprintmind-api"
+      }
     },
     {
-      "src": "/assets/(.*)",
-      "dest": "frontend/dist/assets/$1"
-    },
-    {
-      "src": "/((?!api|admin|static|assets).*)",
-      "dest": "frontend/dist/index.html"
+      "source": "/(.*)",
+      "destination": {
+        "service": "sprintmind-ui"
+      }
     }
   ]
 }

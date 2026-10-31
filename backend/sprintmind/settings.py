@@ -21,7 +21,7 @@ DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
 ALLOWED_HOSTS = [
     host.strip()
-    for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,.onrender.com').split(',')
+    for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,.onrender.com,.vercel.app').split(',')
     if host.strip()
 ]
 
@@ -163,6 +163,12 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://.*\.vercel\.app$",
 ]
 CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv('CSRF_TRUSTED_ORIGINS', 'https://*.vercel.app,https://*.onrender.com').split(',')
+    if origin.strip()
+]
 
 # Django REST Framework
 REST_FRAMEWORK = {

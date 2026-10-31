@@ -2,9 +2,7 @@ import pytest
 from rest_framework import status
 from rest_framework.test import APIClient
 from apps.accounts.models import User
-from apps.workspaces.models import Workspace, WorkspaceMember
-from apps.projects.models import Project
-from apps.sprints.models import Sprint
+from apps.workspaces.models import WorkspaceMember
 from apps.issues.models import Issue
 
 

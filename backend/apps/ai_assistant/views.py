@@ -13,7 +13,6 @@ from apps.sprints.models import Sprint
 from apps.ai_assistant.models import AIRequestLog
 from apps.ai_assistant.services import GroqAIService
 from apps.ai_assistant.exceptions import AIAssistantException
-from common.permissions import IsWorkspaceMember, CanEditIssues
 
 
 def check_ai_rate_limit(user):

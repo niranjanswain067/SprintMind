@@ -2,7 +2,6 @@ import time
 import json
 import logging
 from django.conf import settings
-from django.utils import timezone
 import groq
 
 from apps.ai_assistant.models import AIRequestLog
@@ -61,7 +60,6 @@ class GroqAIService:
             client = self._get_client()
 
             # Attempt initial call + up to 1 retry on malformed JSON
-            last_parse_err = None
             for attempt in range(2):
                 try:
                     completion = client.chat.completions.create(
@@ -81,7 +79,6 @@ class GroqAIService:
                 except (groq.APITimeoutError, groq.RateLimitError, groq.APIConnectionError, groq.InternalServerError):
                     raise
                 except (json.JSONDecodeError, ValueError, Exception) as e:
-                    last_parse_err = e
                     if attempt == 0:
                         logger.warning(f"Groq output parse attempt 1 failed ({e}). Retrying...")
                         continue

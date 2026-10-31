@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db import transaction
-from django.db.models import Sum, Count, Case, When, Value, IntegerField
+from django.db.models import Sum, Case, When, Value, IntegerField
 from django.utils import timezone
 
 from apps.projects.models import Project

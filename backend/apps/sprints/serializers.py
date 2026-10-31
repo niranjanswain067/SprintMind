@@ -1,9 +1,6 @@
 from rest_framework import serializers
-from django.db import transaction
-from django.db.models import Sum, Q
-from django.utils import timezone
+from django.db.models import Sum
 from apps.sprints.models import Sprint
-from apps.issues.models import Issue
 from apps.issues.serializers import IssueListSerializer
 
 

@@ -1,13 +1,12 @@
 import pytest
 from decimal import Decimal
-import threading
 from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
 from apps.accounts.models import User
 from apps.workspaces.models import Workspace, WorkspaceMember
 from apps.projects.models import Project
-from apps.issues.models import Issue, Comment, ActivityLog
+from apps.issues.models import Issue, ActivityLog
 
 
 @pytest.fixture

@@ -20,3 +20,4 @@ export const StrictModeDroppable = ({ children, ...props }) => {
 };
 
 export default StrictModeDroppable;
+
